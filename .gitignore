@@ -29,7 +29,8 @@ chroma_db/
 .vscode/
 .idea/
 *.swp
-
+embedding_cache
+embedding_cache/*
 # OS
 .DS_Store
 Thumbs.db
