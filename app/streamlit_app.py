@@ -1,6 +1,6 @@
 import streamlit as st
 from load_documents import load_pdf, load_docx, load_excel
-from chroma_utils import build_chroma_collection, get_chroma_vectorstore
+from pinecone_utils import build_pinecone_index, get_pinecone_vectorstore
 from retrieval_chain_utils import build_conversational_chain
 from langchain.prompts import PromptTemplate
 import os
@@ -24,15 +24,25 @@ if st.sidebar.button("Process Documents") and doc_files:
         path = os.path.join(temp_dir, file.name)
         with open(path, "wb") as f:
             f.write(file.getvalue())
+        from pathlib import Path as PathLib
+        path_obj = PathLib(path)
         if suffix == "pdf":
-            all_chunks.extend(load_pdf(path))
+            all_chunks.extend(load_pdf(path_obj))
         elif suffix == "docx":
-            all_chunks.extend(load_docx(path))
+            all_chunks.extend(load_docx(path_obj))
         elif suffix in ["xls", "xlsx"]:
-            all_chunks.extend(load_excel(path))
+            all_chunks.extend(load_excel(path_obj))
     if all_chunks:
-        build_chroma_collection(all_chunks)
-        st.sidebar.success(f"Processed and indexed {len(all_chunks)} chunks.")
+        print(f"Total chunks to index: {len(all_chunks)}")
+        # Filter out any non-dict chunks before processing
+        valid_chunks = [chunk for chunk in all_chunks if isinstance(chunk, dict) and 'text' in chunk and 'metadata' in chunk]
+        print(f"Valid chunks: {len(valid_chunks)} out of {len(all_chunks)}")
+        
+        if valid_chunks:
+            build_pinecone_index(valid_chunks)
+            st.sidebar.success(f"Processed and indexed {len(valid_chunks)} valid chunks.")
+        else:
+            st.sidebar.error("No valid chunks found. Check document processing.")
     else:
         st.sidebar.warning("No valid chunks extracted.")
 
@@ -50,22 +60,32 @@ with col2:
 
 user_input = st.text_input("Ask a question:")
 if st.button("Send") and user_input:
-    vectorstore = get_chroma_vectorstore()
-    chain = build_conversational_chain(vectorstore=vectorstore)
-    # Optionally filter docs before retrieval (not implemented here)
-    result = chain({"question": user_input, "chat_history": st.session_state["chat_history"]})
-    st.session_state["chat_history"].append((user_input, result["answer"]))
-    st.markdown(f"**Bot:** {result['answer']}")
-    # Show top chunks
-    st.markdown("### Top Matching Chunks:")
-    for doc in result.get("source_documents", [])[:4]:
-        meta = doc.metadata
-        if doc_type_filter != "All" and meta.get("document_type") != doc_type_filter:
-            continue
-        if topic_filter and topic_filter.lower() not in doc.page_content.lower():
-            continue
-        st.info(f"**Source:** {meta.get('source')} | **Type:** {meta.get('document_type')} | **Page:** {meta.get('page', 'N/A')}")
-        st.write(doc.page_content)
+    try:
+        vectorstore = get_pinecone_vectorstore()
+        chain = build_conversational_chain(vectorstore=vectorstore)
+        if chain is None:
+            st.error("❌ Cannot create conversational chain. Please check your GOOGLE_API_KEY in the .env file.")
+            st.info("💡 Make sure you have a .env file with: GOOGLE_API_KEY=your_api_key_here")
+        else:
+            # Optionally filter docs before retrieval (not implemented here)
+            result = chain({"question": user_input, "chat_history": st.session_state["chat_history"]})
+            st.session_state["chat_history"].append((user_input, result["answer"]))
+            
+            # Display the result
+            st.markdown(f"**Bot:** {result['answer']}")
+            # Show top chunks
+            st.markdown("### Top Matching Chunks:")
+            for doc in result.get("source_documents", [])[:4]:
+                meta = doc.metadata
+                if doc_type_filter != "All" and meta.get("document_type") != doc_type_filter:
+                    continue
+                if topic_filter and topic_filter.lower() not in doc.page_content.lower():
+                    continue
+                st.info(f"**Source:** {meta.get('source')} | **Type:** {meta.get('document_type')} | **Page:** {meta.get('page', 'N/A')}")
+                st.text(doc.page_content[:300] + "...")
+    except Exception as e:
+        st.error(f"❌ Error: {str(e)}")
+        st.info("💡 Please check your API keys and try again.")
         # Feedback thumbs
         st.write("Feedback:", "👍", "👎")
 

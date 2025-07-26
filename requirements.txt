@@ -1,9 +1,11 @@
 langchain>=0.3.0
-chromadb
+pinecone
+langchain-pinecone
 sentence-transformers
 streamlit
 langchain-google-genai
-docling 
+python-dotenv
 PyPDF2
 unstructured
-pandas 
+pandas
+docling

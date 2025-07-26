@@ -50,3 +50,11 @@ Embedding run: 30 texts | Cache hits: 0 | Cache misses: 30
 Embedding run: 30 texts | Cache hits: 30 | Cache misses: 0
 
 Embedding run: 30 texts | Cache hits: 30 | Cache misses: 0
+
+Embedding run: 1 texts | Cache hits: 0 | Cache misses: 1
+
+Embedding run: 1 texts | Cache hits: 1 | Cache misses: 0
+
+Embedding run: 1 texts | Cache hits: 1 | Cache misses: 0
+
+Embedding run: 1 texts | Cache hits: 1 | Cache misses: 0
