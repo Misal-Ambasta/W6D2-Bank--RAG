@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+app/__pycache__
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# Streamlit and app temp files
+.temp/
+temp_files/
+
+# Local environment variables
+.env
+.env.*
+
+# Chroma vectorstore DB
+chroma_db/
+
+# Jupyter/IPython
+.ipynb_checkpoints/
+
+# VSCode and IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Misc
+*.bak
+*.tmp
